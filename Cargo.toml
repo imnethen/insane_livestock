@@ -1,0 +1,9 @@
+[package]
+name = "insanelivestock"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.46.1", features = ["full"] }
+twitch-irc = "5.0.1"
+macroquad = "0.4.14"
