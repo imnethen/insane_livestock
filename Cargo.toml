@@ -1,9 +1,18 @@
 [package]
-name = "insanelivestock"
+name = "INSANE_LIVESTOCK"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
+bevy = { version = "0.16.1", features = ["dynamic_linking", "wayland"] }
+bevy-tokio-tasks = "0.16.0"
+bevy_mod_billboard = { git = "https://github.com/mcobzarenco/bevy_mod_billboard.git", branch = "migrate-0.16"}
+bevy_obj = "0.16.1"
 tokio = { version = "1.46.1", features = ["full"] }
 twitch-irc = "5.0.1"
-macroquad = "0.4.14"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
