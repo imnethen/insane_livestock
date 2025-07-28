@@ -26,7 +26,7 @@ async fn start_listening(mut ctx: bevy_tokio_tasks::TaskContext) {
         twitch_irc::login::StaticLoginCredentials,
     >::new(config);
 
-    client.join("imnethen".to_owned()).unwrap();
+    client.join("ninzwz".to_owned()).unwrap();
 
     let big_receiver = Arc::new(Mutex::new(incoming_messages));
 
