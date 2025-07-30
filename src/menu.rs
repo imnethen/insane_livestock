@@ -15,6 +15,7 @@ impl Plugin for MenuPlugin {
                     (update_name, update_name_text).run_if(in_state(GameState::Start)),
                 ),
             )
+            .add_systems(OnEnter(GameState::Connected), update_menu)
             .add_systems(OnEnter(GameState::Spectating), despawn_main_menu)
             .add_systems(OnEnter(GameState::End), setup_end_menu);
     }
@@ -26,7 +27,7 @@ pub struct ChannelName(pub String);
 #[derive(Component)]
 struct NameText;
 
-#[derive(Component)]
+#[derive(Component, PartialEq, Eq)]
 #[require(Button)]
 enum ButtonAction {
     Connect,
@@ -63,13 +64,27 @@ fn setup_main_menu(mut commands: Commands) {
                 NameText,
             ),
             button(ButtonAction::Connect, "CONNECT", Val::Px(150.)),
-            button(ButtonAction::Start, "START GAME", Val::Px(200.)),
             Node {
                 height: Val::Percent(0.),
                 ..Default::default()
             },
         ],
     ));
+}
+
+fn update_menu(
+    mut commands: Commands,
+    mut buttons_query: Query<(&Children, &mut Node, &mut ButtonAction)>,
+) {
+    let (children, mut node, mut button_action) = buttons_query.single_mut().unwrap();
+    *button_action = ButtonAction::Start;
+
+    commands
+        .entity(children[0])
+        .remove::<Text>()
+        .insert(Text::new("START GAME"));
+
+    node.width = Val::Px(200.);
 }
 
 fn button(action: ButtonAction, text: impl Into<String>, width: Val) -> impl Bundle {

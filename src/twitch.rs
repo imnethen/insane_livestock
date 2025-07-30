@@ -37,7 +37,20 @@ async fn start_listening(mut ctx: bevy_tokio_tasks::TaskContext, name: String) {
         twitch_irc::login::StaticLoginCredentials,
     >::new(config);
 
-    client.join(name).unwrap();
+    if let Err(_) = client.join(name) {
+        ctx.run_on_main_thread(move |ctx| {
+            ctx.world.commands().spawn((
+                Text::new("COULDNT CONNECT RESTART THE GAME"),
+                TextFont {
+                    font_size: 100.,
+                    ..Default::default()
+                },
+                TextColor(bevy::color::palettes::basic::RED.into()),
+            ));
+        })
+        .await;
+        return;
+    }
 
     let big_receiver = Arc::new(Mutex::new(incoming_messages));
 
