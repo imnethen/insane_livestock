@@ -1,6 +1,18 @@
+use crate::GameState;
 use bevy::prelude::*;
 
-pub fn move_camera(
+pub struct SpectatorCameraPlugin;
+
+impl Plugin for SpectatorCameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            FixedUpdate,
+            (move_camera, rotate_camera).run_if(in_state(GameState::Spectating)),
+        );
+    }
+}
+
+fn move_camera(
     mut transform_query: Query<&mut Transform, With<Camera>>,
     input: Res<ButtonInput<KeyCode>>,
 ) {
@@ -35,7 +47,7 @@ pub fn move_camera(
     }
 }
 
-pub fn rotate_camera(
+fn rotate_camera(
     mut transform_query: Query<&mut Transform, With<Camera>>,
     mouse_motion: Res<bevy::input::mouse::AccumulatedMouseMotion>,
     mouse_button_input: Res<ButtonInput<MouseButton>>,

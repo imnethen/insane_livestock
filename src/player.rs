@@ -1,5 +1,5 @@
 use crate::twitch;
-use crate::{AssetHandles, SHEEP_SIZE};
+use crate::{AssetHandles, GameState, SHEEP_SIZE};
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
@@ -11,7 +11,23 @@ pub struct Players(pub HashSet<String>);
 #[derive(Component)]
 pub struct Player(String);
 
-pub fn spawn_player(
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(Players::default())
+            .add_systems(
+                Update,
+                read_user_events.run_if(in_state(GameState::Connected)),
+            )
+            .add_systems(
+                FixedUpdate,
+                (control_players, kill_players, end).run_if(in_state(GameState::Spectating)),
+            );
+    }
+}
+
+fn spawn_player(
     commands: &mut Commands,
     asset_handles: &Res<AssetHandles>,
     name: String,
@@ -89,9 +105,7 @@ fn decide_angle(transform: &Transform, all_pos: &Vec<Vec3>) -> f32 {
     }
 }
 
-pub fn control_players(
-    mut player_query: Query<(&mut LinearVelocity, &mut Transform), With<Player>>,
-) {
+fn control_players(mut player_query: Query<(&mut LinearVelocity, &mut Transform), With<Player>>) {
     let mut positions: Vec<Vec3> = vec![];
     for (_, trans) in &player_query {
         positions.push(trans.translation);
@@ -116,7 +130,7 @@ pub fn control_players(
     }
 }
 
-pub fn kill_players(
+fn kill_players(
     mut commands: Commands,
     mut players: ResMut<Players>,
     asset_handles: Res<AssetHandles>,
@@ -141,13 +155,13 @@ pub fn kill_players(
     }
 }
 
-pub fn end(player_query: Query<&Player>, mut next_game_state: ResMut<NextState<crate::GameState>>) {
+fn end(player_query: Query<&Player>, mut next_game_state: ResMut<NextState<crate::GameState>>) {
     if player_query.iter().len() == 1 {
         next_game_state.set(crate::GameState::End);
     }
 }
 
-pub fn read_user_events(
+fn read_user_events(
     mut events: EventReader<twitch::UserJoined>,
     mut commands: Commands,
     asset_handles: Res<AssetHandles>,

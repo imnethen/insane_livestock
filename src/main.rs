@@ -5,10 +5,9 @@ mod twitch;
 mod util;
 
 use avian3d::prelude::*;
+use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
-
-use bevy::core_pipeline::Skybox;
 
 const SHEEP_SIZE: Vec3 = vec3(1.5, 3.5, 3.);
 
@@ -40,30 +39,14 @@ fn main() {
             PhysicsPlugins::default(),
             twitch::TwitchPlugin,
             menu::MenuPlugin,
+            player::PlayerPlugin,
+            spectator_camera::SpectatorCameraPlugin,
         ))
         .insert_resource(AssetHandles::default())
-        .insert_resource(player::Players::default())
         .insert_resource(SkyboxLoaded::default())
         .init_state::<GameState>()
         .add_systems(Startup, setup)
-        .add_systems(
-            Update,
-            (
-                player::read_user_events.run_if(in_state(GameState::Connected)),
-                setup_skybox.run_if(should_run_skybox),
-            ),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                spectator_camera::move_camera,
-                spectator_camera::rotate_camera,
-                player::control_players,
-                player::kill_players,
-                player::end,
-            )
-                .run_if(in_state(GameState::Spectating)),
-        )
+        .add_systems(Update, (setup_skybox.run_if(should_run_skybox),))
         .run();
 }
 
