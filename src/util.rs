@@ -43,3 +43,17 @@ pub fn keycode_to_string(code: &KeyCode) -> Result<&str, ()> {
         _ => Err(()),
     }
 }
+
+pub fn explosion(asset_handles: &Res<crate::AssetHandles>, pos: Vec3) -> impl Bundle {
+    (
+        AudioPlayer::new(asset_handles.explosion_sound.clone().unwrap()),
+        PlaybackSettings::DESPAWN
+            .with_volume(bevy::audio::Volume::Linear(0.5))
+            .with_spatial(true)
+            .with_spatial_scale(bevy::audio::SpatialScale::new(0.03)),
+        Transform::default().with_translation(pos),
+        GlobalTransform::default(),
+        Mesh3d(asset_handles.explosion_cube.clone().unwrap()),
+        MeshMaterial3d(asset_handles.explosion_material.clone().unwrap()),
+    )
+}

@@ -1,3 +1,4 @@
+mod gun;
 mod menu;
 mod player;
 mod spectator_camera;
@@ -41,6 +42,7 @@ fn main() {
             menu::MenuPlugin,
             player::PlayerPlugin,
             spectator_camera::SpectatorCameraPlugin,
+            gun::GunPlugin,
         ))
         .insert_resource(AssetHandles::default())
         .insert_resource(SkyboxLoaded::default())

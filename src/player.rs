@@ -1,5 +1,4 @@
-use crate::twitch;
-use crate::{AssetHandles, GameState, SHEEP_SIZE};
+use crate::{twitch, util, AssetHandles, GameState, SHEEP_SIZE};
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
@@ -10,6 +9,9 @@ pub struct Players(pub HashSet<String>);
 
 #[derive(Component)]
 pub struct Player(String);
+
+#[derive(Component)]
+struct Speed(f32);
 
 pub struct PlayerPlugin;
 
@@ -33,11 +35,13 @@ fn spawn_player(
     name: String,
     pos: Vec3,
     rot_angle: f32,
+    speed: f32,
 ) {
     commands.spawn((
         // Mesh3d(asset_handles.sheep_sized_cuboid.clone().unwrap()),
         // MeshMaterial3d(asset_handles.sheep_material.clone().unwrap()),
         Player(name.clone()),
+        Speed(speed),
         Transform::default()
             .with_translation(pos)
             .with_rotation(Quat::from_rotation_y(rot_angle)),
@@ -105,15 +109,16 @@ fn decide_angle(transform: &Transform, all_pos: &Vec<Vec3>) -> f32 {
     }
 }
 
-fn control_players(mut player_query: Query<(&mut LinearVelocity, &mut Transform), With<Player>>) {
+fn control_players(
+    mut player_query: Query<(&mut LinearVelocity, &mut Transform, &Speed), With<Player>>,
+) {
     let mut positions: Vec<Vec3> = vec![];
-    for (_, trans) in &player_query {
+    for (_, trans, _) in &player_query {
         positions.push(trans.translation);
     }
     let player_acc = 1.;
-    let player_max_speed = 50.;
 
-    for (mut linvel, mut trans) in &mut player_query {
+    for (mut linvel, mut trans, max_speed) in &mut player_query {
         // rotate
         let angle = decide_angle(&trans, &positions);
         trans.rotate_y(angle);
@@ -121,12 +126,18 @@ fn control_players(mut player_query: Query<(&mut LinearVelocity, &mut Transform)
         linvel.0 = vec3(rotated_xz.x, linvel.0.y, rotated_xz.y);
 
         // accelerate forwards
-        linvel.0 += player_acc * trans.forward();
-        let clamped_xz = linvel.0.xz().clamp_length_max(player_max_speed);
-        linvel.0 = vec3(clamped_xz.x, linvel.0.y, clamped_xz.y);
+        // linvel.0 += player_acc * trans.forward();
+        // let clamped_xz = linvel.0.xz().clamp_length_max(max_speed.0);
+        // linvel.0 = vec3(clamped_xz.x, linvel.0.y, clamped_xz.y);
+        if linvel.0.xz().length() < max_speed.0 {
+            linvel.0 += player_acc * trans.forward();
+        }
 
-        let adj = trans.right().dot(linvel.0) * trans.right() * 0.1;
-        linvel.0 -= adj;
+        // stop them from drifting if theyre on the ground
+        if trans.translation.y < 3. {
+            let adj = trans.right().dot(linvel.0) * trans.right() * 0.1;
+            linvel.0 -= adj;
+        }
     }
 }
 
@@ -137,20 +148,16 @@ fn kill_players(
     player_query: Query<(Entity, &Transform, &Player)>,
 ) {
     for (entity, trans, name) in player_query {
-        if trans.up().dot(Vec3::Y) < 0.1 {
+        // die if close enough to upside down or outside the bounds
+        if trans.up().dot(Vec3::Y) < 0.1
+            || trans
+                .translation
+                .clamp(Vec3::splat(-300.), Vec3::splat(300.))
+                != trans.translation
+        {
             players.0.remove(&name.0);
             commands.entity(entity).despawn();
-            commands.spawn((
-                AudioPlayer::new(asset_handles.explosion_sound.clone().unwrap()),
-                PlaybackSettings::DESPAWN
-                    .with_volume(bevy::audio::Volume::Linear(0.5))
-                    .with_spatial(true)
-                    .with_spatial_scale(bevy::audio::SpatialScale::new(0.03)),
-                Transform::default().with_translation(trans.translation),
-                GlobalTransform::default(),
-                Mesh3d(asset_handles.explosion_cube.clone().unwrap()),
-                MeshMaterial3d(asset_handles.explosion_material.clone().unwrap()),
-            ));
+            commands.spawn(util::explosion(&asset_handles, trans.translation));
         }
     }
 }
@@ -185,6 +192,7 @@ fn read_user_events(
             event.0.clone(),
             pos,
             rand::random_range(0.0..std::f32::consts::TAU),
+            rand::random_range(40.0..60.0),
         );
     }
 
@@ -208,6 +216,7 @@ fn read_user_events(
             name,
             pos,
             rand::random_range(0.0..std::f32::consts::TAU),
+            rand::random_range(40.0..60.0),
         );
     }
 }
