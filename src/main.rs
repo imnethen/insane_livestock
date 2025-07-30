@@ -2,6 +2,7 @@ mod menu;
 mod player;
 mod spectator_camera;
 mod twitch;
+mod util;
 
 use avian3d::prelude::*;
 use bevy::prelude::*;

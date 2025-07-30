@@ -1,4 +1,4 @@
-use crate::{player, twitch, GameState};
+use crate::{player, twitch, util, GameState};
 use bevy::color::palettes::basic;
 use bevy::prelude::*;
 
@@ -6,12 +6,25 @@ pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Start), setup_main_menu)
-            .add_systems(Update, connect_button_system)
+        app.insert_resource(ChannelName::default())
+            .add_systems(OnEnter(GameState::Start), setup_main_menu)
+            .add_systems(
+                Update,
+                (
+                    button_system,
+                    (update_name, update_name_text).run_if(in_state(GameState::Start)),
+                ),
+            )
             .add_systems(OnEnter(GameState::Spectating), despawn_main_menu)
             .add_systems(OnEnter(GameState::End), setup_end_menu);
     }
 }
+
+#[derive(Resource, Default)]
+pub struct ChannelName(pub String);
+
+#[derive(Component)]
+struct NameText;
 
 #[derive(Component)]
 #[require(Button)]
@@ -45,8 +58,9 @@ fn setup_main_menu(mut commands: Commands) {
                 TextFont::default().with_font_size(100.),
             ),
             (
-                Text::new("channel name: imnethen (hardcoded currently,)"),
+                Text::new("channel name: "),
                 TextFont::default().with_font_size(30.),
+                NameText,
             ),
             button(ButtonAction::Connect, "CONNECT", Val::Px(150.)),
             button(ButtonAction::Start, "START GAME", Val::Px(200.)),
@@ -82,9 +96,10 @@ fn button(action: ButtonAction, text: impl Into<String>, width: Val) -> impl Bun
     )
 }
 
-fn connect_button_system(
+fn button_system(
     mut connect_events: EventWriter<twitch::ConnectEvent>,
     mut next_game_state: ResMut<NextState<GameState>>,
+    channel_name: Res<ChannelName>,
     mut button_query: Query<
         (&Interaction, &ButtonAction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
@@ -95,7 +110,7 @@ fn connect_button_system(
             Interaction::Pressed => {
                 match action {
                     ButtonAction::Connect => {
-                        connect_events.write(twitch::ConnectEvent("imnethen".into()));
+                        connect_events.write(twitch::ConnectEvent(channel_name.0.clone()));
                         next_game_state.set(GameState::Connected);
                     }
                     ButtonAction::Start => {
@@ -111,6 +126,23 @@ fn connect_button_system(
             }
         }
     }
+}
+
+fn update_name(mut name: ResMut<ChannelName>, input: Res<ButtonInput<KeyCode>>) {
+    for keycode in input.get_just_pressed() {
+        match util::keycode_to_string(keycode) {
+            Ok(s) => name.0 += s,
+            Err(_) => {
+                if *keycode == KeyCode::Backspace {
+                    name.0.pop();
+                }
+            }
+        };
+    }
+}
+
+fn update_name_text(name: Res<ChannelName>, mut text_query: Single<&mut Text, With<NameText>>) {
+    text_query.0 = "channel name: ".to_owned() + &name.0.clone();
 }
 
 fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<MenuRootNode>>) {
