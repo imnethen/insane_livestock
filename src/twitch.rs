@@ -5,28 +5,39 @@ use std::sync::Mutex;
 #[derive(Event)]
 pub struct UserJoined(pub String);
 
+#[derive(Event)]
+pub struct ConnectEvent(pub String);
+
 pub struct TwitchPlugin;
 
 impl Plugin for TwitchPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(bevy_tokio_tasks::TokioTasksPlugin::default())
-            .add_systems(Startup, setup)
-            .add_event::<UserJoined>();
+            .add_systems(Update, connect)
+            .add_event::<UserJoined>()
+            .add_event::<ConnectEvent>();
     }
 }
 
-fn setup(runtime: ResMut<bevy_tokio_tasks::TokioTasksRuntime>) {
-    runtime.spawn_background_task(start_listening);
+fn connect(
+    mut connect_events: EventReader<ConnectEvent>,
+    tokio_runtime: ResMut<bevy_tokio_tasks::TokioTasksRuntime>,
+) {
+    let events = connect_events.read().collect::<Vec<_>>();
+    if !events.is_empty() {
+        let name = events[0].0.clone();
+        tokio_runtime.spawn_background_task(|ctx| start_listening(ctx, name));
+    }
 }
 
-async fn start_listening(mut ctx: bevy_tokio_tasks::TaskContext) {
+async fn start_listening(mut ctx: bevy_tokio_tasks::TaskContext, name: String) {
     let config = twitch_irc::ClientConfig::default();
     let (incoming_messages, client) = twitch_irc::TwitchIRCClient::<
         twitch_irc::SecureTCPTransport,
         twitch_irc::login::StaticLoginCredentials,
     >::new(config);
 
-    client.join("ninzwz".to_owned()).unwrap();
+    client.join(name).unwrap();
 
     let big_receiver = Arc::new(Mutex::new(incoming_messages));
 

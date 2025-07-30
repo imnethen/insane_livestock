@@ -6,10 +6,10 @@ use bevy_mod_billboard::prelude::*;
 use std::collections::HashSet;
 
 #[derive(Resource, Default)]
-pub struct Players(HashSet<String>);
+pub struct Players(pub HashSet<String>);
 
 #[derive(Component)]
-pub struct Player;
+pub struct Player(String);
 
 pub fn spawn_player(
     commands: &mut Commands,
@@ -21,7 +21,7 @@ pub fn spawn_player(
     commands.spawn((
         // Mesh3d(asset_handles.sheep_sized_cuboid.clone().unwrap()),
         // MeshMaterial3d(asset_handles.sheep_material.clone().unwrap()),
-        Player,
+        Player(name.clone()),
         Transform::default()
             .with_translation(pos)
             .with_rotation(Quat::from_rotation_y(rot_angle)),
@@ -34,8 +34,8 @@ pub fn spawn_player(
             ),
             (vec3(0., 1., -1.5), Quat::default(), Collider::sphere(1.)),
         ]),
-        ComputedMass::new(20.),
-        ComputedCenterOfMass::new(0., -1., 0.),
+        ComputedMass::new(30.),
+        ComputedCenterOfMass::new(0., -1.7, 0.),
         Visibility::Inherited,
         children![
             (
@@ -79,7 +79,8 @@ fn decide_angle(transform: &Transform, all_pos: &Vec<Vec3>) -> f32 {
         right_score += strength * sign;
     }
 
-    if right_score.abs() < 0.0001 {
+    // TODO
+    if right_score.abs() < 0. {
         0.
     } else if right_score > 0. {
         -0.02
@@ -117,11 +118,13 @@ pub fn control_players(
 
 pub fn kill_players(
     mut commands: Commands,
+    mut players: ResMut<Players>,
     asset_handles: Res<AssetHandles>,
-    player_query: Query<(Entity, &Transform), With<Player>>,
+    player_query: Query<(Entity, &Transform, &Player)>,
 ) {
-    for (entity, trans) in player_query {
+    for (entity, trans, name) in player_query {
         if trans.up().dot(Vec3::Y) < 0.1 {
+            players.0.remove(&name.0);
             commands.entity(entity).despawn();
             commands.spawn((
                 AudioPlayer::new(asset_handles.explosion_sound.clone().unwrap()),
@@ -135,6 +138,12 @@ pub fn kill_players(
                 MeshMaterial3d(asset_handles.explosion_material.clone().unwrap()),
             ));
         }
+    }
+}
+
+pub fn end(player_query: Query<&Player>, mut next_game_state: ResMut<NextState<crate::GameState>>) {
+    if player_query.iter().len() == 1 {
+        next_game_state.set(crate::GameState::End);
     }
 }
 
@@ -166,8 +175,14 @@ pub fn read_user_events(
     }
 
     if input.pressed(KeyCode::Space) {
-        let name = "mrrow".to_owned();
-        players.0.insert(name.clone());
+        let mut name = "mrrow ".to_owned();
+        for i in 2..999999 {
+            if !players.0.contains(&(name.clone() + &i.to_string())) {
+                name = name.clone() + &i.to_string();
+                players.0.insert(name.clone());
+                break;
+            }
+        }
         let pos = vec3(
             rand::random_range(-300.0..300.0),
             3.,

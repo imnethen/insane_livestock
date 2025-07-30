@@ -1,3 +1,4 @@
+mod menu;
 mod player;
 mod spectator_camera;
 mod twitch;
@@ -37,6 +38,7 @@ fn main() {
             BillboardPlugin,
             PhysicsPlugins::default(),
             twitch::TwitchPlugin,
+            menu::MenuPlugin,
         ))
         .insert_resource(AssetHandles::default())
         .insert_resource(player::Players::default())
@@ -46,7 +48,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                player::read_user_events,
+                player::read_user_events.run_if(in_state(GameState::Connected)),
                 setup_skybox.run_if(should_run_skybox),
             ),
         )
@@ -57,7 +59,9 @@ fn main() {
                 spectator_camera::rotate_camera,
                 player::control_players,
                 player::kill_players,
-            ),
+                player::end,
+            )
+                .run_if(in_state(GameState::Spectating)),
         )
         .run();
 }
@@ -65,7 +69,10 @@ fn main() {
 #[derive(States, Default, Debug, Hash, Eq, PartialEq, Clone)]
 enum GameState {
     #[default]
-    Menu,
+    Start,
+    Connected,
+    Spectating,
+    End,
 }
 
 #[derive(Resource, Default)]
@@ -90,7 +97,7 @@ fn setup(
     let skybox_handle = asset_server.load::<Image>("skybox.png");
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(300., 10., 0.),
+        Transform::from_xyz(0., 10., 300.),
         SpatialListener::new(-1.),
         Skybox {
             image: skybox_handle.clone(),
