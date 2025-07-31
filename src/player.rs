@@ -1,8 +1,10 @@
-use crate::{twitch, util, AssetHandles, GameState, SHEEP_SIZE};
+use crate::{twitch, util, AssetHandles, GameState};
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 use std::collections::HashSet;
+
+pub const SHEEP_SIZE: Vec3 = vec3(2.5, 3.5, 3.5);
 
 #[derive(Resource, Default)]
 pub struct Players(pub HashSet<String>);
@@ -24,6 +26,7 @@ impl Plugin for PlayerPlugin {
             )
             .add_systems(
                 FixedUpdate,
+                // (/*control_players,*/ kill_players, end).run_if(in_state(GameState::Spectating)),
                 (control_players, kill_players, end).run_if(in_state(GameState::Spectating)),
             );
     }
@@ -39,7 +42,7 @@ fn spawn_player(
 ) {
     commands.spawn((
         // Mesh3d(asset_handles.sheep_sized_cuboid.clone().unwrap()),
-        // MeshMaterial3d(asset_handles.sheep_material.clone().unwrap()),
+        // MeshMaterial3d(asset_handles.player_material.clone().unwrap()),
         Player(name.clone()),
         Speed(speed),
         Transform::default()
@@ -52,15 +55,19 @@ fn spawn_player(
                 Quat::default(),
                 Collider::cuboid(SHEEP_SIZE.x, SHEEP_SIZE.y, SHEEP_SIZE.z),
             ),
-            (vec3(0., 1., -1.5), Quat::default(), Collider::sphere(1.)),
+            (
+                vec3(0., 0.75, -2.5),
+                Quat::default(),
+                Collider::sphere(1.25),
+            ),
         ]),
-        ComputedMass::new(30.),
+        ComputedMass::new(100.),
         ComputedCenterOfMass::new(0., -1.7, 0.),
         Visibility::Inherited,
         children![
             (
-                Mesh3d(asset_handles.sheep_mesh.clone().unwrap()),
-                MeshMaterial3d(asset_handles.sheep_material.clone().unwrap()),
+                Mesh3d(asset_handles.player_mesh.clone().unwrap()),
+                MeshMaterial3d(asset_handles.player_material.clone().unwrap()),
                 Transform::default()
                     .with_scale(Vec3::splat(0.1))
                     .with_translation(vec3(0.2, -1.7, 0.))
@@ -74,8 +81,8 @@ fn spawn_player(
             ),
             // (
             //     Mesh3d(asset_handles.the_sphere.clone().unwrap()),
-            //     MeshMaterial3d(asset_handles.sheep_material.clone().unwrap()),
-            //     Transform::from_xyz(0., 1., -1.5)
+            //     MeshMaterial3d(asset_handles.player_material.clone().unwrap()),
+            //     Transform::from_xyz(0., 0.75, -2.5)
             // )
         ],
     ));
@@ -135,7 +142,7 @@ fn control_players(
 
         // stop them from drifting if theyre on the ground
         if trans.translation.y < 3. {
-            let adj = trans.right().dot(linvel.0) * trans.right() * 0.1;
+            let adj = trans.right().dot(linvel.0.normalize()) * trans.right() * 3.;
             linvel.0 -= adj;
         }
     }
@@ -149,7 +156,7 @@ fn kill_players(
 ) {
     for (entity, trans, name) in player_query {
         // die if close enough to upside down or outside the bounds
-        if trans.up().dot(Vec3::Y) < 0.1
+        if trans.up().dot(Vec3::Y) < 0.15
             || trans
                 .translation
                 .clamp(Vec3::splat(-300.), Vec3::splat(300.))

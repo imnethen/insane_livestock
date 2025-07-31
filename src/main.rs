@@ -10,8 +10,6 @@ use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 
-const SHEEP_SIZE: Vec3 = vec3(1.5, 3.5, 3.);
-
 fn main() {
     App::new()
         .add_plugins(
@@ -44,6 +42,7 @@ fn main() {
             spectator_camera::SpectatorCameraPlugin,
             gun::GunPlugin,
         ))
+        .insert_resource(Gravity(Vec3::NEG_Y * 50.))
         .insert_resource(AssetHandles::default())
         .insert_resource(SkyboxLoaded::default())
         .init_state::<GameState>()
@@ -63,8 +62,8 @@ enum GameState {
 
 #[derive(Resource, Default)]
 struct AssetHandles {
-    sheep_mesh: Option<Handle<Mesh>>,
-    sheep_material: Option<Handle<StandardMaterial>>,
+    player_mesh: Option<Handle<Mesh>>,
+    player_material: Option<Handle<StandardMaterial>>,
     sheep_sized_cuboid: Option<Handle<Mesh>>,
     the_sphere: Option<Handle<Mesh>>,
     explosion_sound: Option<Handle<AudioSource>>,
@@ -137,14 +136,14 @@ fn setup(
         ));
     }
 
-    asset_handles.sheep_mesh = Some(asset_server.load::<Mesh>("goat/goat.obj"));
-    asset_handles.sheep_sized_cuboid = Some(meshes.add(Cuboid::from_size(SHEEP_SIZE)));
-    asset_handles.the_sphere = Some(meshes.add(Sphere::new(1.)));
-    asset_handles.sheep_material = Some(materials.add(StandardMaterial {
+    asset_handles.player_mesh = Some(asset_server.load::<Mesh>("goat/goat.obj"));
+    asset_handles.sheep_sized_cuboid = Some(meshes.add(Cuboid::from_size(player::SHEEP_SIZE)));
+    asset_handles.player_material = Some(materials.add(StandardMaterial {
         base_color_texture: Some(asset_server.load("goat/goat.png")),
         unlit: true,
         ..Default::default()
     }));
+    asset_handles.the_sphere = Some(meshes.add(Sphere::new(1.25)));
     asset_handles.explosion_sound = Some(asset_server.load("explosion.ogg"));
     asset_handles.explosion_cube = Some(meshes.add(Cuboid::from_size(Vec3::splat(10.))));
     asset_handles.explosion_material = Some(materials.add(StandardMaterial {
