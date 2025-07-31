@@ -71,6 +71,7 @@ struct AssetHandles {
     explosion_cube: Option<Handle<Mesh>>,
     explosion_material: Option<Handle<StandardMaterial>>,
     skybox: Option<Handle<Image>>,
+    bullet_material: Option<Handle<StandardMaterial>>,
 }
 
 fn setup(
@@ -94,10 +95,47 @@ fn setup(
 
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(600., 1., 600.))),
-        MeshMaterial3d(materials.add(Color::from(bevy::color::palettes::basic::WHITE))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: Color::srgb(0.5, 0.5, 0.5),
+            base_color_texture: Some(asset_server.load("grass.png")),
+            unlit: true,
+            ..Default::default()
+        })),
         RigidBody::Static,
         Collider::cuboid(600., 1., 600.),
     ));
+
+    let fence_material = materials.add(StandardMaterial {
+        base_color_texture: Some(asset_server.load("fence.png")),
+        unlit: true,
+        cull_mode: None,
+        alpha_mode: AlphaMode::Mask(0.5),
+        ..Default::default()
+    });
+
+    // spawn fence
+    for i in 0..30 {
+        commands.spawn((
+            Mesh3d(meshes.add(Plane3d::new(vec3(1., 0., 0.), vec2(2.5, 10.)))),
+            MeshMaterial3d(fence_material.clone()),
+            Transform::from_xyz(-300., 2.5, i as f32 * 20. - 290.),
+        ));
+        commands.spawn((
+            Mesh3d(meshes.add(Plane3d::new(vec3(-1., 0., 0.), vec2(2.5, 10.)))),
+            MeshMaterial3d(fence_material.clone()),
+            Transform::from_xyz(300., 2.5, i as f32 * 20. - 290.),
+        ));
+        commands.spawn((
+            Mesh3d(meshes.add(Plane3d::new(vec3(0., 0., 1.), vec2(10., 2.5)))),
+            MeshMaterial3d(fence_material.clone()),
+            Transform::from_xyz(i as f32 * 20. - 290., 2.5, -300.),
+        ));
+        commands.spawn((
+            Mesh3d(meshes.add(Plane3d::new(vec3(0., 0., -1.), vec2(10., 2.5)))),
+            MeshMaterial3d(fence_material.clone()),
+            Transform::from_xyz(i as f32 * 20. - 290., 2.5, 300.),
+        ));
+    }
 
     asset_handles.sheep_mesh = Some(asset_server.load::<Mesh>("goat/goat.obj"));
     asset_handles.sheep_sized_cuboid = Some(meshes.add(Cuboid::from_size(SHEEP_SIZE)));
@@ -111,10 +149,17 @@ fn setup(
     asset_handles.explosion_cube = Some(meshes.add(Cuboid::from_size(Vec3::splat(10.))));
     asset_handles.explosion_material = Some(materials.add(StandardMaterial {
         base_color_texture: Some(asset_server.load("explosion.png")),
+        cull_mode: None,
+        alpha_mode: AlphaMode::Mask(0.5),
         unlit: true,
         ..Default::default()
     }));
     asset_handles.skybox = Some(skybox_handle);
+    asset_handles.bullet_material = Some(materials.add(StandardMaterial {
+        base_color_texture: Some(asset_server.load("33fire.png")),
+        unlit: true,
+        ..Default::default()
+    }));
 }
 
 #[derive(Resource, Default)]

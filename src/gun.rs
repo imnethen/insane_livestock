@@ -33,10 +33,10 @@ fn shoot(
     commands.spawn((
         Bullet,
         Collider::sphere(1.),
-        trans.with_translation(trans.translation + trans.forward() * 1.),
+        Transform::from_translation(trans.translation + trans.forward() * 0.5),
         LinearVelocity(trans.forward() * bullet_speed),
         Mesh3d(asset_handles.the_sphere.clone().unwrap()),
-        MeshMaterial3d(asset_handles.explosion_material.clone().unwrap()),
+        MeshMaterial3d(asset_handles.bullet_material.clone().unwrap()),
     ));
 }
 
