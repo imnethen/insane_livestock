@@ -2,8 +2,14 @@ use bevy::prelude::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+#[derive(Debug, Clone)]
+pub struct Message {
+    pub sender: String,
+    pub text: String,
+}
+
 #[derive(Event)]
-pub struct UserJoined(pub String);
+pub struct UserJoined(pub Message);
 
 #[derive(Event)]
 pub struct ConnectEvent(pub String);
@@ -59,7 +65,10 @@ async fn start_listening(mut ctx: bevy_tokio_tasks::TaskContext, name: String) {
         ctx.run_on_main_thread(move |ctx| {
             while let Ok(message) = receiver.lock().unwrap().try_recv() {
                 if let twitch_irc::message::ServerMessage::Privmsg(msg) = message {
-                    ctx.world.send_event(UserJoined(msg.sender.name));
+                    ctx.world.send_event(UserJoined(Message {
+                        sender: msg.sender.name,
+                        text: msg.message_text,
+                    }));
                 }
             }
         })

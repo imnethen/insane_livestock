@@ -83,7 +83,7 @@ fn setup(
     let skybox_handle = asset_server.load::<Image>("skybox.png");
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0., 10., 300.),
+        Transform::from_xyz(0., 10., -300.).looking_to(Vec3::Z, Vec3::Y),
         SpatialListener::new(-1.),
         Skybox {
             image: skybox_handle.clone(),

@@ -1,4 +1,4 @@
-use crate::{twitch, util, AssetHandles, GameState};
+use crate::{menu, twitch, util, AssetHandles, GameState};
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
@@ -178,16 +178,19 @@ fn end(player_query: Query<&Player>, mut next_game_state: ResMut<NextState<crate
 fn read_user_events(
     mut events: EventReader<twitch::UserJoined>,
     mut commands: Commands,
+    settings: Res<menu::Settings>,
     asset_handles: Res<AssetHandles>,
     mut players: ResMut<Players>,
-    // TODO: remove
     input: Res<ButtonInput<KeyCode>>,
 ) {
     for event in events.read() {
-        if players.0.contains(&event.0) {
+        let msg = event.0.clone();
+        if players.0.contains(&msg.sender)
+            || (settings.filter_joins && msg.text != "!play".to_owned())
+        {
             continue;
         }
-        players.0.insert(event.0.clone());
+        players.0.insert(msg.sender.clone());
         let pos = vec3(
             rand::random_range(-300.0..300.0),
             3.,
@@ -196,7 +199,7 @@ fn read_user_events(
         spawn_player(
             &mut commands,
             &asset_handles,
-            event.0.clone(),
+            msg.sender.clone(),
             pos,
             rand::random_range(0.0..std::f32::consts::TAU),
             rand::random_range(40.0..60.0),

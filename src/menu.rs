@@ -7,11 +7,13 @@ pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ChannelName::default())
+            .insert_resource(Settings::default())
             .add_systems(OnEnter(GameState::Start), setup_main_menu)
             .add_systems(
                 Update,
                 (
                     button_system,
+                    update_filter_text,
                     (update_name, update_name_text).run_if(in_state(GameState::Start)),
                 ),
             )
@@ -21,17 +23,32 @@ impl Plugin for MenuPlugin {
     }
 }
 
+#[derive(Resource)]
+pub struct Settings {
+    pub filter_joins: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings { filter_joins: true }
+    }
+}
+
 #[derive(Resource, Default)]
 pub struct ChannelName(pub String);
 
 #[derive(Component)]
 struct NameText;
 
+#[derive(Component)]
+struct FilterText;
+
 #[derive(Component, PartialEq, Eq)]
 #[require(Button)]
 enum ButtonAction {
     Connect,
     Start,
+    ToggleFilter,
 }
 
 #[derive(Component)]
@@ -70,21 +87,48 @@ fn setup_main_menu(mut commands: Commands) {
             },
         ],
     ));
+
+    commands.spawn((
+        ButtonAction::ToggleFilter,
+        Node {
+            width: Val::Px(400.),
+            height: Val::Px(60.),
+            align_items: AlignItems::Center,
+            justify_content: JustifyContent::Center,
+            border: UiRect::all(Val::Px(5.)),
+            ..Default::default()
+        },
+        BorderColor(basic::BLACK.into()),
+        BorderRadius::all(Val::Px(8.)),
+        BackgroundColor(basic::GRAY.into()),
+        children![(
+            Text::new("Oly count 'play!' messages: yes".to_owned()),
+            TextFont {
+                font_size: 20.,
+                ..Default::default()
+            },
+            FilterText,
+        )],
+    ));
 }
 
 fn update_menu(
     mut commands: Commands,
-    mut buttons_query: Query<(&Children, &mut Node, &mut ButtonAction)>,
+    buttons_query: Query<(&Children, &mut Node, &mut ButtonAction)>,
 ) {
-    let (children, mut node, mut button_action) = buttons_query.single_mut().unwrap();
-    *button_action = ButtonAction::Start;
+    for (children, mut node, mut button_action) in buttons_query {
+        if *button_action != ButtonAction::Connect {
+            continue;
+        }
+        *button_action = ButtonAction::Start;
 
-    commands
-        .entity(children[0])
-        .remove::<Text>()
-        .insert(Text::new("START GAME"));
+        commands
+            .entity(children[0])
+            .remove::<Text>()
+            .insert(Text::new("START GAME"));
 
-    node.width = Val::Px(200.);
+        node.width = Val::Px(200.);
+    }
 }
 
 fn button(action: ButtonAction, text: impl Into<String>, width: Val) -> impl Bundle {
@@ -114,6 +158,7 @@ fn button(action: ButtonAction, text: impl Into<String>, width: Val) -> impl Bun
 fn button_system(
     mut connect_events: EventWriter<twitch::ConnectEvent>,
     mut next_game_state: ResMut<NextState<GameState>>,
+    mut settings: ResMut<Settings>,
     channel_name: Res<ChannelName>,
     mut button_query: Query<
         (&Interaction, &ButtonAction, &mut BackgroundColor),
@@ -130,6 +175,9 @@ fn button_system(
                     }
                     ButtonAction::Start => {
                         next_game_state.set(GameState::Spectating);
+                    }
+                    ButtonAction::ToggleFilter => {
+                        settings.filter_joins = !settings.filter_joins;
                     }
                 };
             }
@@ -158,6 +206,14 @@ fn update_name(mut name: ResMut<ChannelName>, input: Res<ButtonInput<KeyCode>>) 
 
 fn update_name_text(name: Res<ChannelName>, mut text_query: Single<&mut Text, With<NameText>>) {
     text_query.0 = "channel name: ".to_owned() + &name.0.clone();
+}
+
+fn update_filter_text(
+    settings: Res<Settings>,
+    mut text_query: Single<&mut Text, With<FilterText>>,
+) {
+    text_query.0 = "Only count '!play' messages: ".to_owned()
+        + if settings.filter_joins { "yes" } else { "no" };
 }
 
 fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<MenuRootNode>>) {
