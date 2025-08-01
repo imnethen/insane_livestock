@@ -14,7 +14,8 @@ impl Plugin for MenuPlugin {
                 (
                     button_system,
                     update_filter_text,
-                    (update_name, update_name_text).run_if(in_state(GameState::Start)),
+                    (update_name, update_name_text, update_gpp_text)
+                        .run_if(in_state(GameState::Start)),
                 ),
             )
             .add_systems(OnEnter(GameState::Connected), update_menu)
@@ -26,11 +27,15 @@ impl Plugin for MenuPlugin {
 #[derive(Resource)]
 pub struct Settings {
     pub filter_joins: bool,
+    pub goats_per_player: u32,
 }
 
 impl Default for Settings {
     fn default() -> Self {
-        Settings { filter_joins: true }
+        Settings {
+            filter_joins: true,
+            goats_per_player: 1,
+        }
     }
 }
 
@@ -43,12 +48,16 @@ struct NameText;
 #[derive(Component)]
 struct FilterText;
 
+#[derive(Component)]
+struct GPPText;
+
 #[derive(Component, PartialEq, Eq)]
 #[require(Button)]
 enum ButtonAction {
     Connect,
     Start,
     ToggleFilter,
+    ChangeGPP(bool),
 }
 
 #[derive(Component)]
@@ -89,26 +98,55 @@ fn setup_main_menu(mut commands: Commands) {
     ));
 
     commands.spawn((
-        ButtonAction::ToggleFilter,
+        MenuRootNode,
         Node {
-            width: Val::Px(400.),
-            height: Val::Px(60.),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            border: UiRect::all(Val::Px(5.)),
+            height: Val::Percent(10.),
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::SpaceBetween,
             ..Default::default()
         },
-        BorderColor(basic::BLACK.into()),
-        BorderRadius::all(Val::Px(8.)),
-        BackgroundColor(basic::GRAY.into()),
-        children![(
-            Text::new("Oly count 'play!' messages: yes".to_owned()),
-            TextFont {
-                font_size: 20.,
-                ..Default::default()
-            },
-            FilterText,
-        )],
+        children![
+            (
+                ButtonAction::ToggleFilter,
+                Node {
+                    width: Val::Px(400.),
+                    height: Val::Px(60.),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    border: UiRect::all(Val::Px(5.)),
+                    ..Default::default()
+                },
+                BorderColor(basic::BLACK.into()),
+                BorderRadius::all(Val::Px(8.)),
+                BackgroundColor(basic::GRAY.into()),
+                children![(
+                    Text::new("Only count 'play!' messages: yes".to_owned()),
+                    TextFont {
+                        font_size: 20.,
+                        ..Default::default()
+                    },
+                    FilterText,
+                )]
+            ),
+            (
+                Node {
+                    align_items: AlignItems::Center,
+                    ..Default::default()
+                },
+                children![
+                    button(ButtonAction::ChangeGPP(true), "+", Val::Px(60.)),
+                    button(ButtonAction::ChangeGPP(false), "-", Val::Px(60.)),
+                    (
+                        Text::new("Goats per player: 1"),
+                        TextFont {
+                            font_size: 20.,
+                            ..Default::default()
+                        },
+                        GPPText,
+                    )
+                ]
+            )
+        ],
     ));
 }
 
@@ -179,6 +217,21 @@ fn button_system(
                     ButtonAction::ToggleFilter => {
                         settings.filter_joins = !settings.filter_joins;
                     }
+                    ButtonAction::ChangeGPP(b) => {
+                        if settings.goats_per_player == 1 && !*b {
+                            continue;
+                        }
+                        let diff = if settings.goats_per_player < 10 {
+                            1
+                        } else {
+                            10
+                        };
+                        if *b {
+                            settings.goats_per_player += diff;
+                        } else {
+                            settings.goats_per_player -= diff;
+                        }
+                    }
                 };
             }
             Interaction::Hovered => {
@@ -216,17 +269,13 @@ fn update_filter_text(
         + if settings.filter_joins { "yes" } else { "no" };
 }
 
-fn despawn_main_menu(
-    mut commands: Commands,
-    menu_query: Query<Entity, With<MenuRootNode>>,
-    // necessary because the filter button isnt a child of the menu root node
-    button_query: Query<Entity, With<Button>>,
-) {
+fn update_gpp_text(settings: Res<Settings>, mut text_query: Single<&mut Text, With<GPPText>>) {
+    text_query.0 = "Goats per player: ".to_owned() + &settings.goats_per_player.to_string();
+}
+
+fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<MenuRootNode>>) {
     for menu in menu_query {
         commands.entity(menu).despawn();
-    }
-    for button in button_query {
-        commands.entity(button).despawn();
     }
 }
 

@@ -185,25 +185,33 @@ fn read_user_events(
 ) {
     for event in events.read() {
         let msg = event.0.clone();
-        if players.0.contains(&msg.sender)
-            || (settings.filter_joins && msg.text != "!play".to_owned())
-        {
-            continue;
+        for i in 0..settings.goats_per_player {
+            let name = if settings.goats_per_player == 1 {
+                msg.sender.clone()
+            } else {
+                msg.sender.clone() + " " + &i.to_string()
+            };
+
+            if players.0.contains(&name)
+                || (settings.filter_joins && msg.text != "!play".to_owned())
+            {
+                continue;
+            }
+            players.0.insert(name.clone());
+            let pos = vec3(
+                rand::random_range(-300.0..300.0),
+                3.,
+                rand::random_range(-300.0..300.0),
+            );
+            spawn_player(
+                &mut commands,
+                &asset_handles,
+                name.clone(),
+                pos,
+                rand::random_range(0.0..std::f32::consts::TAU),
+                rand::random_range(40.0..60.0),
+            );
         }
-        players.0.insert(msg.sender.clone());
-        let pos = vec3(
-            rand::random_range(-300.0..300.0),
-            3.,
-            rand::random_range(-300.0..300.0),
-        );
-        spawn_player(
-            &mut commands,
-            &asset_handles,
-            msg.sender.clone(),
-            pos,
-            rand::random_range(0.0..std::f32::consts::TAU),
-            rand::random_range(40.0..60.0),
-        );
     }
 
     if input.pressed(KeyCode::Space) {

@@ -5,13 +5,13 @@ edition = "2021"
 
 [dependencies]
 avian3d = "0.3.1"
-bevy = { version = "0.16.1", features = ["dynamic_linking", "wayland"] }
+bevy = { version = "0.16.1", features = ["wayland"] }
 bevy-tokio-tasks = "0.16.0"
 bevy_mod_billboard = { git = "https://github.com/mcobzarenco/bevy_mod_billboard.git", branch = "migrate-0.16"}
 bevy_obj = "0.16.1"
 rand = "0.9.2"
-tokio = { version = "1.46.1", features = ["full"] }
-twitch-irc = "5.0.1"
+tokio = { version = "1.47.0", features = ["full"] }
+twitch-irc = { version = "5.0.1" }
 
 [profile.dev]
 opt-level = 1

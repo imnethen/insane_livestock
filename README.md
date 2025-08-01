@@ -10,7 +10,6 @@ BIG TODO:
 
 medium Todo:
 - make the camera move when in main menu
-- multiply players
 - add join and death texts
 
 small todo:
