@@ -17,9 +17,9 @@ fn move_camera(
     input: Res<ButtonInput<KeyCode>>,
 ) {
     let camera_speed = if input.pressed(KeyCode::ShiftLeft) {
-        1.6
+        2.
     } else {
-        0.8
+        1.
     };
     let mut tf = transform_query.single_mut().unwrap();
 
@@ -57,7 +57,7 @@ fn rotate_camera(
     }
 
     let mouse_delta = mouse_motion.delta;
-    let sensitivity = 1e-2;
+    let sensitivity = 8e-3;
     let mut tf = transform_query.single_mut().unwrap();
     tf.rotate_y(-sensitivity * mouse_delta.x);
     tf.rotate_local_x(-sensitivity * mouse_delta.y);

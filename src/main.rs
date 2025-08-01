@@ -16,8 +16,6 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        resizable: false,
-                        resolution: bevy::window::WindowResolution::new(2048., 1152.),
                         cursor_options: bevy::window::CursorOptions {
                             visible: true,
                             hit_test: true,
@@ -47,7 +45,8 @@ fn main() {
         .insert_resource(SkyboxLoaded::default())
         .init_state::<GameState>()
         .add_systems(Startup, setup)
-        .add_systems(Update, (setup_skybox.run_if(should_run_skybox),))
+        .add_systems(Update, setup_skybox.run_if(should_run_skybox))
+        .add_systems(OnEnter(GameState::Spectating), lock_cursor)
         .run();
 }
 
@@ -190,4 +189,12 @@ fn setup_skybox(
     });
 
     skybox_loaded.0 = true;
+}
+
+fn lock_cursor(mut window: Single<&mut Window>) {
+    window.cursor_options = bevy::window::CursorOptions {
+        visible: false,
+        grab_mode: bevy::window::CursorGrabMode::Locked,
+        hit_test: true,
+    };
 }

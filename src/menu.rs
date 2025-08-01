@@ -216,9 +216,17 @@ fn update_filter_text(
         + if settings.filter_joins { "yes" } else { "no" };
 }
 
-fn despawn_main_menu(mut commands: Commands, menu_query: Query<Entity, With<MenuRootNode>>) {
+fn despawn_main_menu(
+    mut commands: Commands,
+    menu_query: Query<Entity, With<MenuRootNode>>,
+    // necessary because the filter button isnt a child of the menu root node
+    button_query: Query<Entity, With<Button>>,
+) {
     for menu in menu_query {
         commands.entity(menu).despawn();
+    }
+    for button in button_query {
+        commands.entity(button).despawn();
     }
 }
 
