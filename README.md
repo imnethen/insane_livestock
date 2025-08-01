@@ -1,6 +1,8 @@
 # INSANE LIVESTOCK
 
-insane livestock 3d on stream yay
+insane livestock on stream yay
+
+wasdqe to move, shift to move faster, lmb to shoot the gun
 
 BIG TODO:
 - improve physics
@@ -20,3 +22,4 @@ small todo:
 - skins with like !play 2 for example
 - !baah and !explode
 - streamer as player ?
+- more maps
