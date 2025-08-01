@@ -14,8 +14,8 @@ impl Plugin for MenuPlugin {
                 (
                     button_system,
                     update_filter_text,
-                    (update_name, update_name_text, update_gpp_text)
-                        .run_if(in_state(GameState::Start)),
+                    update_gpp_text,
+                    (update_name, update_name_text).run_if(in_state(GameState::Start)),
                 ),
             )
             .add_systems(OnEnter(GameState::Connected), update_menu)
