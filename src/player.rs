@@ -55,11 +55,7 @@ fn spawn_player(
                 Quat::default(),
                 Collider::cuboid(SHEEP_SIZE.x, SHEEP_SIZE.y, SHEEP_SIZE.z),
             ),
-            (
-                vec3(0., 0.75, -2.5),
-                Quat::default(),
-                Collider::sphere(1.25),
-            ),
+            (vec3(0., 0.7, -2.5), Quat::default(), Collider::sphere(1.25)),
         ]),
         ComputedMass::new(100.),
         ComputedCenterOfMass::new(0., -1.7, 0.),
@@ -82,7 +78,7 @@ fn spawn_player(
             // (
             //     Mesh3d(asset_handles.the_sphere.clone().unwrap()),
             //     MeshMaterial3d(asset_handles.player_material.clone().unwrap()),
-            //     Transform::from_xyz(0., 0.75, -2.5)
+            //     Transform::from_xyz(0., 0.7, -2.5)
             // )
         ],
     ));

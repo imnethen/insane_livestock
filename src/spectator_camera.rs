@@ -17,9 +17,9 @@ fn move_camera(
     input: Res<ButtonInput<KeyCode>>,
 ) {
     let camera_speed = if input.pressed(KeyCode::ShiftLeft) {
-        2.
+        3.
     } else {
-        1.
+        1.5
     };
     let mut tf = transform_query.single_mut().unwrap();
 
